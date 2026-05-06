@@ -60,6 +60,9 @@ class Solver(object):
         
         print("Starting training...")
         start_time = time.time()
+        
+        data_iter = iter(data_loader)
+        
         for i in range(self.config['num_iters']):
             try:
                 x_real, label_org = next(data_iter)
@@ -168,4 +171,4 @@ if __name__ == '__main__':
     }
     os.makedirs(config['model_save_dir'], exist_ok=True)
     solver = Solver(config)
-    # solver.train() # Uncomment to train
+    solver.train()
