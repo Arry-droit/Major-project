@@ -26,10 +26,30 @@ class AgeProgressor:
         self.G = Generator(c_dim=c_dim, repeat_num=6)
         
         if model_path and os.path.exists(model_path):
-            self.G.load_state_dict(torch.load(model_path, map_location=self.device))
-            print(f"Loaded model from {model_path}")
+            try:
+                checkpoint = torch.load(model_path, map_location=self.device)
+                
+                # Handle different checkpoint formats
+                if isinstance(checkpoint, dict) and 'state_dict' in checkpoint:
+                    state_dict = checkpoint['state_dict']
+                else:
+                    state_dict = checkpoint
+                
+                # Remove 'module.' prefix if present (from DataParallel)
+                new_state_dict = {}
+                for k, v in state_dict.items():
+                    if k.startswith('module.'):
+                        new_state_dict[k[7:]] = v
+                    else:
+                        new_state_dict[k] = v
+                
+                self.G.load_state_dict(new_state_dict, strict=False)
+                print(f"Loaded model from {model_path}")
+            except Exception as e:
+                print(f"Warning: Failed to load model weights: {e}")
+                print("Using uninitialized weights (results will be noise).")
         else:
-            print("Warning: No model weights found. Using uninitialized weights (results will be noise).")
+            print("Warning: Model file not found. Using uninitialized weights (results will be noise).")
             
         self.G.to(self.device)
         self.G.eval()
@@ -51,7 +71,7 @@ class AgeProgressor:
         
         # Prepare target domain label
         target_label = torch.tensor([target_age_group])
-        c_trg = label2onehot(target_label, self.dim).to(self.device) if hasattr(self, 'dim') else label2onehot(target_label, self.c_dim).to(self.device)
+        c_trg = label2onehot(target_label, self.c_dim).to(self.device)
         
         # Inference
         with torch.no_grad():

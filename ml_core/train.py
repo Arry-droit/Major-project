@@ -3,8 +3,8 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import time
-from .model import Generator, Discriminator
-from .dataset import get_loader
+from model import Generator, Discriminator
+from dataset import get_loader
 
 def gradient_penalty(y, x, device):
     """Compute gradient penalty: (L2_norm(dy/dx) - 1)**2."""
@@ -50,6 +50,16 @@ class Solver(object):
         self.G.load_state_dict(torch.load(G_path, map_location=self.device))
         self.D.load_state_dict(torch.load(D_path, map_location=self.device))
         
+    def get_latest_checkpoint(self):
+        models_dir = self.config['model_save_dir']
+        if not os.path.exists(models_dir):
+            return 0
+        checkpoints = [f for f in os.listdir(models_dir) if f.endswith('-G.ckpt') and f != 'latest-G.ckpt']
+        if not checkpoints:
+            return 0
+        iters = [int(f.split('-')[0]) for f in checkpoints]
+        return max(iters)
+        
     def train(self):
         # Data loader
         data_loader = get_loader(self.config['image_dir'], self.config['image_size'], self.config['batch_size'])
@@ -58,12 +68,16 @@ class Solver(object):
         criterion_cls = nn.CrossEntropyLoss()
         criterion_rec = nn.L1Loss()
         
-        print("Starting training...")
+        start_iters = self.get_latest_checkpoint()
+        if start_iters > 0:
+            self.restore_model(start_iters)
+        
+        print(f"Starting training from iteration {start_iters}...")
         start_time = time.time()
         
         data_iter = iter(data_loader)
         
-        for i in range(self.config['num_iters']):
+        for i in range(start_iters, self.config['num_iters']):
             try:
                 x_real, label_org = next(data_iter)
             except:

@@ -21,7 +21,7 @@ class ResidualBlock(nn.Module):
 
 class Generator(nn.Module):
     """StarGAN Generator Network."""
-    def __init__(self, conv_dim=64, c_dim=5, repeat_num=6):
+    def __init__(self, conv_dim=64, c_dim=6, repeat_num=6):
         super(Generator, self).__init__()
 
         layers = []
@@ -65,7 +65,7 @@ class Generator(nn.Module):
 
 class Discriminator(nn.Module):
     """StarGAN Discriminator Network."""
-    def __init__(self, image_size=128, conv_dim=64, c_dim=5, repeat_num=6):
+    def __init__(self, image_size=128, conv_dim=64, c_dim=6, repeat_num=6):
         super(Discriminator, self).__init__()
 
         layers = []
